@@ -14,6 +14,8 @@ module gfm.math.shapes;
 import std.math,
        std.traits;
 
+import std.algorithm.comparison : min, max;
+
 import gfm.math.vector,
        gfm.math.box;
 
@@ -41,7 +43,7 @@ struct Segment(T, int N)
                 auto dot = ap.dot(ab_dir);
                 if (dot < 0.0f)
                     return a;
-                auto ab_len_sqr = ab_dir.length;
+                auto ab_len_sqr = ab_dir.magnitude;
                 if (dot > ab_len_sqr)
                     return b;
                 return a + ab_dir * dot / ab_len_sqr;
@@ -128,12 +130,12 @@ struct Triangle(T, int N)
 
         @nogc point_t closestPoint(point_t p) pure const nothrow
         {
-            auto proj_ab = Segment(a, b).closestPoint(p);
-            auto proj_bc = Segment(b, c).closestPoint(p);
-            auto proj_ca = Segment(c, a).closestPoint(p);
-            auto dist2_ab = (p - proj_ab).squaredLength;
-            auto dist2_bc = (p - proj_bc).squaredLength;
-            auto dist2_ca = (p - proj_ca).squaredLength;
+            auto proj_ab = Segment!(T, N)(a, b).closestPoint(p);
+            auto proj_bc = Segment!(T, N)(b, c).closestPoint(p);
+            auto proj_ca = Segment!(T, N)(c, a).closestPoint(p);
+            auto dist2_ab = (p - proj_ab).squaredMagnitude;
+            auto dist2_bc = (p - proj_bc).squaredMagnitude;
+            auto dist2_ca = (p - proj_ca).squaredMagnitude;
 
             auto m = min(dist2_ab, dist2_bc, dist2_ca);
             if (m == dist2_ab)

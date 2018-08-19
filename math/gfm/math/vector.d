@@ -384,6 +384,16 @@ nothrow:
                 return res;
             }
 
+            static if (N == 2)
+            {
+                @nogc Vector rotate(float radians) pure const nothrow
+                {
+                    auto c = cos(radians);
+                    auto s = sin(radians);
+                    return Vector(x * c - y * s, x * s + y * c);
+                }
+            }
+
             static if (N == 3)
             {
                 /// Gets an orthogonal vector from a 3-dimensional vector.

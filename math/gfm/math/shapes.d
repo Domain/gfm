@@ -26,6 +26,28 @@ struct Segment(T, int N)
         alias Vector!(T, N) point_t;
         point_t a, b;
 
+        @nogc this(point_t a, point_t b) pure nothrow
+        {
+            this.a = a;
+            this.b = b;
+        }
+
+        static if (isFloatingPoint!T)
+        {
+            @nogc point_t closestPoint(point_t p) pure const nothrow
+            {
+                auto ap = p - a;
+                auto ab_dir = b - a;
+                auto dot = ap.dot(ab_dir);
+                if (dot < 0.0f)
+                    return a;
+                auto ab_len_sqr = ab_dir.length;
+                if (dot > ab_len_sqr)
+                    return b;
+                return a + ab_dir * dot / ab_len_sqr;
+            }
+        }
+
         static if (N == 3 && isFloatingPoint!T)
         {
             /// Segment vs plane intersection.
@@ -77,6 +99,49 @@ struct Triangle(T, int N)
     {
         alias Vector!(T, N) point_t;
         point_t a, b, c;
+
+        @nogc this(point_t pa, point_t pb, point_t pc) pure nothrow
+        {
+            a = pa;
+            b = pb;
+            c = pc;
+        }
+
+        @nogc bool contains(point_t p) pure const nothrow
+        {
+            bool b1 = ((p.x - b.x) * (a.y - b.y) - (p.y - b.y) * (a.x - b.x)) < 0.0f;
+            bool b2 = ((p.x - c.x) * (b.y - c.y) - (p.y - c.y) * (b.x - c.x)) < 0.0f;
+            bool b3 = ((p.x - a.x) * (c.y - a.y) - (p.y - a.y) * (c.x - a.x)) < 0.0f;
+            return ((b1 == b2) && (b2 == b3));
+        }
+
+        @nogc void barycentricCoords(point_t p, out float u, out float v, out float w) pure const nothrow
+        {
+            auto v0 = b - a;
+            auto v1 = c - a;
+            auto v2 = p - a;
+            const float denom = v0.x * v1.y - v1.x * v0.y;
+            v = (v2.x * v1.y - v1.x * v2.y) / denom;
+            w = (v0.x * v2.y - v2.x * v0.y) / denom;
+            u = 1.0f - v - w;
+        }
+
+        @nogc point_t closestPoint(point_t p) pure const nothrow
+        {
+            auto proj_ab = Segment(a, b).closestPoint(p);
+            auto proj_bc = Segment(b, c).closestPoint(p);
+            auto proj_ca = Segment(c, a).closestPoint(p);
+            auto dist2_ab = (p - proj_ab).squaredLength;
+            auto dist2_bc = (p - proj_bc).squaredLength;
+            auto dist2_ca = (p - proj_ca).squaredLength;
+
+            auto m = min(dist2_ab, dist2_bc, dist2_ca);
+            if (m == dist2_ab)
+                return proj_ab;
+            if (m == dist2_bc)
+                return proj_bc;
+            return proj_ca;
+        }
 
         static if (N == 2)
         {
